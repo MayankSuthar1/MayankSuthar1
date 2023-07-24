@@ -1,8 +1,8 @@
-- 👋 Hi, I’m @MayankSuthar1
-- 👀 I’m interested in ...
-- 🌱 I’m currently learning ...
-- 💞️ I’m looking to collaborate on ...
-- 📫 How to reach me ...
+- 👋 Hi, I’m Mayank Suthar
+- 👀 I’m interested in Artificial intelligence and ml and game development
+- 🌱 I’m currently learning python
+- 💞️ I’m looking to collaborate on Artificial intelligence topics
+- 📫 How to reach me 
 
 <!---
 MayankSuthar1/MayankSuthar1 is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
