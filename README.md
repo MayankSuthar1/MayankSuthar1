@@ -7,7 +7,7 @@
 
 - 🔭 I’m currently working on **ML web app**
 
-- 🌱 I’m currently learning **Learning Ml and mern full stack**
+- 🌱 I’m currently learning **Learning Ml and Django full stack**
 
 - 👯 I’m looking to collaborate on **Making an Ml web app**
 
