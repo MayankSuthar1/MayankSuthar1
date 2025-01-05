@@ -5,7 +5,7 @@
 
 
 
-- 🔭 I’m currently working on **ML web app**
+- 🔭 I’m currently working on learning **Freelancing Project in Django**
 
 - 🌱 I’m currently learning **Learning Ml and Django full stack**
 
