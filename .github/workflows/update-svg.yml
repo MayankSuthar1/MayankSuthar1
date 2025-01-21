@@ -26,11 +26,11 @@ jobs:
       - name: Fetch dynamic data
         id: fetch-data
         run: |
-          # Fetch data (e.g., GitHub API for stars, latest project, etc.)
+          # Fetch data from GitHub API
           AGE_DATA=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.created_at')
-          STARS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq '.[].stargazers_count' | awk '{sum+=$1} END {print sum}')
+          STARS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq '[.[].stargazers_count] | add')
           REPOS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq 'length')
-          COMMITS=$(curl -s "https://api.github.com/users/MayankSuthar1/events" | jq '.[].payload.commits | length')
+          COMMITS=$(curl -s "https://api.github.com/users/MayankSuthar1/events" | jq '[.[].payload.commits // [] | length] | add')
           FOLLOWERS=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.followers')
 
           # Output data for use in the next step
