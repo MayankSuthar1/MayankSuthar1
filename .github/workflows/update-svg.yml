@@ -27,14 +27,14 @@ jobs:
         id: fetch-data
         run: |
           # Fetch data from GitHub API
-          AGE_DATA=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.created_at')
+          # AGE_DATA=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.created_at')
           STARS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq '[.[].stargazers_count] | add // 0')
           REPOS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq 'length')
           COMMITS=$(curl -s "https://api.github.com/users/MayankSuthar1/events" | jq '[.[].payload.commits // []] | add | length')
           FOLLOWERS=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.followers')
 
           # Output data for use in the next step
-          echo "AGE_DATA=$AGE_DATA" >> $GITHUB_ENV
+          # echo "AGE_DATA=$AGE_DATA" >> $GITHUB_ENV
           echo "STARS=$STARS" >> $GITHUB_ENV
           echo "REPOS=$REPOS" >> $GITHUB_ENV
           echo "COMMITS=$COMMITS" >> $GITHUB_ENV
@@ -49,7 +49,7 @@ jobs:
           sed -i "s/{{COMMITS}}/$COMMITS/g" dark_mode.svg
           sed -i "s/{{FOLLOWERS}}/$FOLLOWERS/g" dark_mode.svg
 
-          sed -i "s/{{AGE_DATA}}/$AGE_DATA/g" light_mode.svg
+          # sed -i "s/{{AGE_DATA}}/$AGE_DATA/g" light_mode.svg
           sed -i "s/{{STARS}}/$STARS/g" light_mode.svg
           sed -i "s/{{REPOS}}/$REPOS/g" light_mode.svg
           sed -i "s/{{COMMITS}}/$COMMITS/g" light_mode.svg
