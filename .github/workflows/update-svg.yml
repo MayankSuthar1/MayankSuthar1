@@ -1,0 +1,64 @@
+name: Update SVG
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  update-svg:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Fetch dynamic data
+        id: fetch-data
+        run: |
+          # Fetch data (e.g., GitHub API for stars, latest project, etc.)
+          AGE_DATA=$(curl -s "https://api.github.com/users/your-username" | jq -r '.created_at')
+          STARS=$(curl -s "https://api.github.com/users/your-username/repos" | jq '.[].stargazers_count' | awk '{sum+=$1} END {print sum}')
+          REPOS=$(curl -s "https://api.github.com/users/your-username/repos" | jq 'length')
+          COMMITS=$(curl -s "https://api.github.com/users/your-username/events" | jq '.[].payload.commits | length')
+          FOLLOWERS=$(curl -s "https://api.github.com/users/your-username" | jq -r '.followers')
+
+          # Output data for use in the next step
+          echo "AGE_DATA=$AGE_DATA" >> $GITHUB_ENV
+          echo "STARS=$STARS" >> $GITHUB_ENV
+          echo "REPOS=$REPOS" >> $GITHUB_ENV
+          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
+          echo "FOLLOWERS=$FOLLOWERS" >> $GITHUB_ENV
+
+      - name: Update SVG
+        run: |
+          # Replace placeholders in SVG files with fetched data
+          sed -i "s/{{AGE_DATA}}/$AGE_DATA/g" dark_mode.svg
+          sed -i "s/{{STARS}}/$STARS/g" dark_mode.svg
+          sed -i "s/{{REPOS}}/$REPOS/g" dark_mode.svg
+          sed -i "s/{{COMMITS}}/$COMMITS/g" dark_mode.svg
+          sed -i "s/{{FOLLOWERS}}/$FOLLOWERS/g" dark_mode.svg
+
+          sed -i "s/{{AGE_DATA}}/$AGE_DATA/g" light_mode.svg
+          sed -i "s/{{STARS}}/$STARS/g" light_mode.svg
+          sed -i "s/{{REPOS}}/$REPOS/g" light_mode.svg
+          sed -i "s/{{COMMITS}}/$COMMITS/g" light_mode.svg
+          sed -i "s/{{FOLLOWERS}}/$FOLLOWERS/g" light_mode.svg
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add dark_mode.svg light_mode.svg
+          git commit -m "Update SVG with dynamic data"
+          git push
