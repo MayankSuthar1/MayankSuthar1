@@ -27,11 +27,11 @@ jobs:
         id: fetch-data
         run: |
           # Fetch data (e.g., GitHub API for stars, latest project, etc.)
-          AGE_DATA=$(curl -s "https://api.github.com/users/your-username" | jq -r '.created_at')
-          STARS=$(curl -s "https://api.github.com/users/your-username/repos" | jq '.[].stargazers_count' | awk '{sum+=$1} END {print sum}')
-          REPOS=$(curl -s "https://api.github.com/users/your-username/repos" | jq 'length')
-          COMMITS=$(curl -s "https://api.github.com/users/your-username/events" | jq '.[].payload.commits | length')
-          FOLLOWERS=$(curl -s "https://api.github.com/users/your-username" | jq -r '.followers')
+          AGE_DATA=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.created_at')
+          STARS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq '.[].stargazers_count' | awk '{sum+=$1} END {print sum}')
+          REPOS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq 'length')
+          COMMITS=$(curl -s "https://api.github.com/users/MayankSuthar1/events" | jq '.[].payload.commits | length')
+          FOLLOWERS=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.followers')
 
           # Output data for use in the next step
           echo "AGE_DATA=$AGE_DATA" >> $GITHUB_ENV
