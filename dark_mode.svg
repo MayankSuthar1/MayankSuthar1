@@ -47,7 +47,7 @@
   <text x="390" y="30" fill="#c9d1d9">
     <tspan x="390" y="30">mayank@suthar</tspan> -———————————————————————————————————————————-—-
     <tspan x="390" y="50" class="cc"> . </tspan><tspan class="key">OS</tspan>:<tspan class="cc"> ........................ </tspan><tspan class="value">Windows 10</tspan>
-    <tspan x="390" y="130" class="cc"> . </tspan><tspan class="key">IDE</tspan>:<tspan class="cc"> ........................ </tspan><tspan class="value">VS Code, Pycharm</tspan>
+    <tspan x="390" y="70" class="cc"> . </tspan><tspan class="key">IDE</tspan>:<tspan class="cc"> ........................ </tspan><tspan class="value">VS Code, Pycharm</tspan>
     <tspan x="390" y="150" class="cc"> . </tspan>
     <tspan x="390" y="170" class="cc"> . </tspan><tspan class="key">Languages</tspan>.<tspan class="key">Programming</tspan>:<tspan class="cc"> ..... </tspan><tspan class="value">{{LANGUAGES_PROGRAMMING}}</tspan>
     <tspan x="390" y="190" class="cc"> . </tspan><tspan class="key">Languages</tspan>.<tspan class="key">Computer</tspan>:<tspan class="cc"> ......... </tspan><tspan class="value">{{LANGUAGES_COMPUTER}}</tspan>
