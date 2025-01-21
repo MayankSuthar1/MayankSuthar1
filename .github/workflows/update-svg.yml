@@ -24,16 +24,16 @@ jobs:
       - name: Fetch dynamic data
         id: fetch-data
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}  # Personal Access Token with repo scope
         run: |
           python - <<EOF
           import requests
           import json
           import os
           
-          # GitHub API headers
+          # GitHub API headers with PAT
           headers = {
-              'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}",
+              'Authorization': f"Bearer {os.environ['GH_PAT']}",
               'Accept': 'application/vnd.github.v3+json'
           }
           
@@ -44,26 +44,52 @@ jobs:
           user_response = requests.get(f"{base_url}/users/{username}", headers=headers)
           user_data = user_response.json()
           
-          # Get repos data
-          repos_response = requests.get(f"{base_url}/users/{username}/repos", headers=headers)
-          repos = repos_response.json()
+          # Get all repositories (public and private)
+          all_repos = []
+          page = 1
+          while True:
+              repos_response = requests.get(
+                  f"{base_url}/user/repos",
+                  headers=headers,
+                  params={
+                      'per_page': 100,
+                      'page': page,
+                      'affiliation': 'owner,collaborator',
+                      'visibility': 'all'
+                  }
+              )
+              if not repos_response.json():
+                  break
+              all_repos.extend(repos_response.json())
+              page += 1
+          
+          # Filter repos for the specific user
+          user_repos = [repo for repo in all_repos if repo['owner']['login'] == username]
           
           # Calculate stats
-          total_stars = sum(repo['stargazers_count'] for repo in repos)
-          total_repos = len(repos)
+          total_stars = sum(repo['stargazers_count'] for repo in user_repos)
+          total_repos = len(user_repos)
           
-          # Get contribution data
-          contributed_repos = 0  # You might want to implement this based on your needs
+          # Get contribution data (including private repos)
+          contributed_repos = len([repo for repo in all_repos if repo['owner']['login'] != username])
           
           # Initialize lines of code counters
           total_additions = 0
           total_deletions = 0
           
           # Fetch commits count and lines of code for each repository
-          for repo in repos:
+          for repo in user_repos:
               # Get commit statistics
-              stats_url = f"{base_url}/repos/{username}/{repo['name']}/stats/contributors"
+              stats_url = f"{base_url}/repos/{repo['owner']['login']}/{repo['name']}/stats/contributors"
               stats_response = requests.get(stats_url, headers=headers)
+              
+              # GitHub might return 202 if stats are being calculated
+              if stats_response.status_code == 202:
+                  # Wait briefly and try again
+                  import time
+                  time.sleep(2)
+                  stats_response = requests.get(stats_url, headers=headers)
+              
               if stats_response.status_code == 200 and stats_response.json():
                   for contributor in stats_response.json():
                       if contributor.get('author', {}).get('login') == username:
@@ -74,18 +100,31 @@ jobs:
           # Get followers
           followers = user_data['followers']
           
-          # Get total commits (approximate from recent events)
-          events_response = requests.get(f"{base_url}/users/{username}/events", headers=headers)
-          commits = sum(len(event.get('payload', {}).get('commits', [])) 
-                       for event in events_response.json() 
-                       if event['type'] == 'PushEvent')
+          # Get total commits (including private repos)
+          total_commits = 0
+          for repo in user_repos:
+              commits_url = f"{base_url}/repos/{repo['owner']['login']}/{repo['name']}/commits"
+              commits_response = requests.get(
+                  commits_url,
+                  headers=headers,
+                  params={'author': username, 'per_page': 1}
+              )
+              if 'Link' in commits_response.headers:
+                  # Extract total count from Link header
+                  last_link = [link for link in commits_response.headers['Link'].split(',') if 'rel="last"' in link]
+                  if last_link:
+                      total_commits += int(last_link[0].split('page=')[1].split('>')[0])
+              else:
+                  # If no Link header, count commits in response
+                  commits_data = commits_response.json()
+                  total_commits += len(commits_data)
           
           # Write to GitHub Actions environment
           with open(os.environ['GITHUB_ENV'], 'a') as env_file:
               env_file.write(f"STARS={total_stars}\n")
               env_file.write(f"REPOS={total_repos}\n")
               env_file.write(f"CONTRIBUTED={contributed_repos}\n")
-              env_file.write(f"COMMITS={commits}\n")
+              env_file.write(f"COMMITS={total_commits}\n")
               env_file.write(f"FOLLOWERS={followers}\n")
               env_file.write(f"LOC={total_additions - total_deletions}\n")
               env_file.write(f"LOC_ADD={total_additions}\n")
