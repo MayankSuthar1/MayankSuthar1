@@ -1,5 +1,4 @@
-name: Update SVG
-
+name: Update SVG Stats
 on:
   schedule:
     - cron: '0 0 * * *' # Runs daily at midnight
@@ -8,57 +7,117 @@ on:
 jobs:
   update-svg:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
+        
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
+          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests jq
-
+          pip install requests
+          
       - name: Fetch dynamic data
         id: fetch-data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Fetch data from GitHub API
-          # AGE_DATA=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.created_at')
-          STARS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq '[.[].stargazers_count] | add // 0')
-          REPOS=$(curl -s "https://api.github.com/users/MayankSuthar1/repos" | jq 'length')
-          COMMITS=$(curl -s "https://api.github.com/users/MayankSuthar1/events" | jq '[.[].payload.commits // []] | add | length')
-          FOLLOWERS=$(curl -s "https://api.github.com/users/MayankSuthar1" | jq -r '.followers')
-
-          # Output data for use in the next step
-          # echo "AGE_DATA=$AGE_DATA" >> $GITHUB_ENV
-          echo "STARS=$STARS" >> $GITHUB_ENV
-          echo "REPOS=$REPOS" >> $GITHUB_ENV
-          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
-          echo "FOLLOWERS=$FOLLOWERS" >> $GITHUB_ENV
-
+          python - <<EOF
+          import requests
+          import json
+          import os
+          
+          # GitHub API headers
+          headers = {
+              'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}",
+              'Accept': 'application/vnd.github.v3+json'
+          }
+          
+          username = 'MayankSuthar1'
+          base_url = 'https://api.github.com'
+          
+          # Fetch basic user data
+          user_response = requests.get(f"{base_url}/users/{username}", headers=headers)
+          user_data = user_response.json()
+          
+          # Get repos data
+          repos_response = requests.get(f"{base_url}/users/{username}/repos", headers=headers)
+          repos = repos_response.json()
+          
+          # Calculate stats
+          total_stars = sum(repo['stargazers_count'] for repo in repos)
+          total_repos = len(repos)
+          
+          # Get contribution data
+          contributed_repos = 0  # You might want to implement this based on your needs
+          
+          # Initialize lines of code counters
+          total_additions = 0
+          total_deletions = 0
+          
+          # Fetch commits count and lines of code for each repository
+          for repo in repos:
+              # Get commit statistics
+              stats_url = f"{base_url}/repos/{username}/{repo['name']}/stats/contributors"
+              stats_response = requests.get(stats_url, headers=headers)
+              if stats_response.status_code == 200 and stats_response.json():
+                  for contributor in stats_response.json():
+                      if contributor.get('author', {}).get('login') == username:
+                          for week in contributor['weeks']:
+                              total_additions += week['a']
+                              total_deletions += week['d']
+          
+          # Get followers
+          followers = user_data['followers']
+          
+          # Get total commits (approximate from recent events)
+          events_response = requests.get(f"{base_url}/users/{username}/events", headers=headers)
+          commits = sum(len(event.get('payload', {}).get('commits', [])) 
+                       for event in events_response.json() 
+                       if event['type'] == 'PushEvent')
+          
+          # Write to GitHub Actions environment
+          with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+              env_file.write(f"STARS={total_stars}\n")
+              env_file.write(f"REPOS={total_repos}\n")
+              env_file.write(f"CONTRIBUTED={contributed_repos}\n")
+              env_file.write(f"COMMITS={commits}\n")
+              env_file.write(f"FOLLOWERS={followers}\n")
+              env_file.write(f"LOC={total_additions - total_deletions}\n")
+              env_file.write(f"LOC_ADD={total_additions}\n")
+              env_file.write(f"LOC_DEL={total_deletions}\n")
+          EOF
+          
       - name: Update SVG
         run: |
-          # Replace placeholders in SVG files with fetched data
-          # sed -i "s/{{AGE_DATA}}/$AGE_DATA/g" dark_mode.svg
-          sed -i "s/{{STARS}}/$STARS/g" dark_mode.svg
+          # Create a function to format numbers with commas
+          format_number() {
+            printf "%'d" $1
+          }
+          
+          # Format the numbers
+          LOC_FORMATTED=$(format_number $LOC)
+          LOC_ADD_FORMATTED=$(format_number $LOC_ADD)
+          LOC_DEL_FORMATTED=$(format_number $LOC_DEL)
+          
+          # Update the SVG file
           sed -i "s/{{REPOS}}/$REPOS/g" dark_mode.svg
+          sed -i "s/{{CONTRIBUTED}}/$CONTRIBUTED/g" dark_mode.svg
+          sed -i "s/{{STARS}}/$STARS/g" dark_mode.svg
           sed -i "s/{{COMMITS}}/$COMMITS/g" dark_mode.svg
           sed -i "s/{{FOLLOWERS}}/$FOLLOWERS/g" dark_mode.svg
-
-          # sed -i "s/{{AGE_DATA}}/$AGE_DATA/g" light_mode.svg
-          sed -i "s/{{STARS}}/$STARS/g" light_mode.svg
-          sed -i "s/{{REPOS}}/$REPOS/g" light_mode.svg
-          sed -i "s/{{COMMITS}}/$COMMITS/g" light_mode.svg
-          sed -i "s/{{FOLLOWERS}}/$FOLLOWERS/g" light_mode.svg
-
+          sed -i "s/{{LOC}}/$LOC_FORMATTED/g" dark_mode.svg
+          sed -i "s/{{LOC_ADD}}/$LOC_ADD_FORMATTED/g" dark_mode.svg
+          sed -i "s/{{LOC_DEL}}/$LOC_DEL_FORMATTED/g" dark_mode.svg
+          
       - name: Commit changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add dark_mode.svg light_mode.svg
-          git commit -m "Update SVG with dynamic data"
+          git add dark_mode.svg
+          git commit -m "Update SVG stats" || echo "No changes to commit"
           git push
